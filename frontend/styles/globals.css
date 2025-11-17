@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__next {
+  height: 100%;
+  background: #0b0b12;
+  color: #e6e6ef;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-md bg-brand hover:bg-brand-dark transition text-white disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.card {
+  @apply bg-white/5 border border-white/10 rounded-xl backdrop-blur p-4;
+}
+
+
+

@@ -1,0 +1,9 @@
+﻿node_modules/
+frontend/.next/
+frontend/out/
+frontend/.pnp.cjs
+backend/storage/
+backend/.env
+.env
+.vercel/
+.DS_Store
