@@ -3,11 +3,9 @@ import Head from 'next/head';
 import { WSClient } from '../../lib/ws';
 import Peer from 'simple-peer';
 import { loadIceConfig } from '../../lib/webrtc';
+import { apiUrl, wsUrl } from '../../lib/env';
 
-const BACKEND_WS =
-  typeof window === 'undefined'
-    ? ''
-    : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:4000/ws`;
+const BACKEND_WS = typeof window === 'undefined' ? '' : wsUrl();
 
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
@@ -85,13 +83,13 @@ export default function AdminPage() {
     ws.connect();
     wsRef.current = ws;
     const fetchStats = () => {
-      fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(apiUrl('/api/admin/stats'), { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((d) => {
           setStats({ onlineUsers: d.onlineUsers, participantsInRooms: d.participantsInRooms, complaints: d.complaints });
         })
         .catch(() => {});
-      fetch('/api/admin/ads', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(apiUrl('/api/admin/ads'), { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((d) => setAds(d))
         .catch(() => {});
@@ -106,7 +104,7 @@ export default function AdminPage() {
     const fd = new FormData(e.currentTarget);
     const username = String(fd.get('username') || '');
     const password = String(fd.get('password') || '');
-    const res = await fetch('/api/admin/login', {
+    const res = await fetch(apiUrl('/api/admin/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -231,7 +229,7 @@ export default function AdminPage() {
               <button
                 className="btn bg-red-500 hover:bg-red-600"
                 onClick={() => {
-                  fetch('/api/admin/ban', {
+                  fetch(apiUrl('/api/admin/ban'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({ userId: banUserId, banned: true })
@@ -246,7 +244,7 @@ export default function AdminPage() {
               <button
                 className="btn"
                 onClick={() => {
-                  fetch('/api/admin/premium', {
+                  fetch(apiUrl('/api/admin/premium'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({ userId: premiumUserId, premium: true })
@@ -264,7 +262,7 @@ export default function AdminPage() {
                 <button
                   className="btn"
                   onClick={() => {
-                    fetch('/api/admin/vip-filters', {
+                    fetch(apiUrl('/api/admin/vip-filters'), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                       body: JSON.stringify({ key: vipKey, value: vipValue })
@@ -297,7 +295,7 @@ export default function AdminPage() {
               <button
                 className="btn w-full"
                 onClick={() => {
-                  fetch('/api/admin/ads', {
+                  fetch(apiUrl('/api/admin/ads'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({ ad: newAd })

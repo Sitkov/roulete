@@ -7,13 +7,11 @@ import { ChatPanel } from './ChatPanel';
 import { Filters } from './Filters';
 import { Toast } from './Toast';
 import { VideoPlaceholder } from './VideoPlaceholder';
+import { apiUrl, wsUrl } from '../lib/env';
 
 type ChatMessage = { from: 'me' | 'peer' | 'sys'; text: string; ts: number };
 
-const BACKEND_WS =
-  typeof window === 'undefined'
-    ? ''
-    : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:4000/ws`;
+const BACKEND_WS = typeof window === 'undefined' ? '' : wsUrl();
 
 export function VideoChat() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -57,7 +55,7 @@ export function VideoChat() {
       localStorage.setItem('userId', stored);
     }
     setUserId(stored);
-    const res = await fetch('/api/init', {
+    const res = await fetch(apiUrl('/api/init'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: stored, gender })
@@ -285,7 +283,7 @@ export function VideoChat() {
 
   const report = useCallback(() => {
     if (!partnerId || !userId) return;
-    fetch('/api/complaint', {
+    fetch(apiUrl('/api/complaint'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reporterId: userId, reportedId: partnerId, reason: 'abuse' })

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { apiUrl } from '../lib/env';
 
 export function OnlineCounter() {
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
     let mounted = true;
     const fetchCount = () => {
-      fetch('/api/online')
+      fetch(apiUrl('/api/online'))
         .then((r) => r.json())
         .then((d) => mounted && setCount(d.online))
         .catch(() => {});

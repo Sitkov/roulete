@@ -14,10 +14,11 @@ const nextConfig = {
   output: 'standalone',
   async rewrites() {
     // Proxy Next.js /api/* to backend during dev and prod (same machine)
+    const backend = process.env.BACKEND_ORIGIN || 'http://localhost:4000';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*'
+        destination: `${backend}/api/:path*`
       }
     ];
   }
