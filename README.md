@@ -1,6 +1,3 @@
-# Roulette Video Chat (Frontend + Backend)
-
-Полностью рабочий видеочат-рулетка с анонимными пользователями, WebRTC (SimplePeer), сигналингом на Node.js (WebSocket), текстовым чатом, фильтрами, VIP-заготовками, админкой (мониторинг, баны, жалобы, реклама), современным UI на Next.js + Tailwind и PWA-настройками.
 
 ## Стек
 - Frontend: Next.js 14, Tailwind CSS, next-pwa, SimplePeer
