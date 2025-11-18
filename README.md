@@ -28,6 +28,10 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 FRONTEND_ORIGIN=http://localhost:3000
 DATABASE_FILE=./storage/app.sqlite
+# LiveKit (SFU, чтобы медиа работали у всех, без TURN)
+LIVEKIT_URL=wss://your-livekit-domain # или wss://cloud.livekit.io/...
+LIVEKIT_API_KEY=your_api_key
+LIVEKIT_API_SECRET=your_api_secret
 ```
 
 ## Возможности
@@ -52,5 +56,10 @@ DATABASE_FILE=./storage/app.sqlite
 - `npm run dev` — запускает backend и frontend.
 - `npm run build` — сборка проекта.
 - `npm start` — запуск в прод-режиме.
+
+## LiveKit режим (альтернатива P2P)
+- Укажите переменные LIVEKIT_* на бэке и NEXT_PUBLIC_LIVEKIT_URL на фронте.
+- Фронт автоматически переключится на публикацию/подписку через SFU (LiveKit). Админка подключается к тем же комнатам.
+
 
 

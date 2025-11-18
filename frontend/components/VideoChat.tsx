@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { WSClient } from '../lib/ws';
 import { createPeer, getMediaStream, PeerConnection, loadIceConfig } from '../lib/webrtc';
+import { connectLivekit, LivekitHandle } from '../lib/livekit';
 import { Controls } from './Controls';
 import { ChatPanel } from './ChatPanel';
 import { Filters } from './Filters';
@@ -40,6 +41,8 @@ export function VideoChat() {
   const pendingSignalsRef = useRef<any[]>([]);
   const userInteractedRef = useRef<boolean>(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const livekitRef = useRef<LivekitHandle | null>(null);
+  const useLivekit = typeof window !== 'undefined' ? !!process.env.NEXT_PUBLIC_LIVEKIT_URL : false;
 
   useEffect(() => {
     const ok = localStorage.getItem('ageConfirmed') === '1';
@@ -95,8 +98,12 @@ export function VideoChat() {
         setIsSearching(false);
         setRoomId(msg.roomId);
         setPartnerId(msg.partnerId);
-        // Pass IDs explicitly to avoid stale state in closure
-        startPeer(msg.initiator, msg.partnerId, msg.roomId);
+        if (useLivekit) {
+          startLivekit(msg.roomId);
+        } else {
+          // Pass IDs explicitly to avoid stale state in closure
+          startPeer(msg.initiator, msg.partnerId, msg.roomId);
+        }
       } else if (msg.type === 'signal') {
         if (msg.monitor) {
           // admin monitor signal
@@ -115,6 +122,10 @@ export function VideoChat() {
         setMessages((m) => [...m, { from: 'peer', text: msg.message, ts: msg.ts }]);
       } else if (msg.type === 'partner_left' || msg.type === 'stopped') {
         cleanupPeer();
+        if (useLivekit) {
+          livekitRef.current?.disconnect().catch(() => {});
+          livekitRef.current = null;
+        }
         setRoomId(null);
         setPartnerId(null);
         setIsSearching(false);
@@ -217,6 +228,31 @@ export function VideoChat() {
       remoteVideoRef.current.srcObject = null;
     }
   }, []);
+
+  const startLivekit = useCallback(async (room: string) => {
+    try {
+      // ensure local preview
+      const stream = localStreamRef.current || (await getMediaStream());
+      localStreamRef.current = stream;
+      if (localVideoRef.current && !localVideoRef.current.srcObject) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.muted = true;
+        await localVideoRef.current.play().catch(() => {});
+      }
+      const handle = await connectLivekit(room, userId!, (remote) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remote;
+          remoteVideoRef.current.muted = false;
+          remoteVideoRef.current.play().catch(() => {});
+          setRemoteMuted(false);
+        }
+      }, true);
+      livekitRef.current = handle;
+      setMessages((m) => [...m, { from: 'sys', text: 'Подключение (LiveKit)...', ts: Date.now() }]);
+    } catch {
+      setToast('LiveKit: ошибка подключения');
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (!userId || !wsRef.current) return;

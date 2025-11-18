@@ -4,6 +4,7 @@ import { WSClient } from '../../lib/ws';
 import Peer from 'simple-peer';
 import { loadIceConfig } from '../../lib/webrtc';
 import { apiUrl, wsUrl } from '../../lib/env';
+import { connectLivekit, LivekitHandle } from '../../lib/livekit';
 
 const BACKEND_WS = typeof window === 'undefined' ? '' : wsUrl();
 
@@ -24,6 +25,8 @@ export default function AdminPage() {
   const aVideoRef = useRef<HTMLVideoElement>(null);
   const bVideoRef = useRef<HTMLVideoElement>(null);
   const monitorPeersRef = useRef<Record<string, Peer.Instance>>({});
+  const useLivekit = typeof window !== 'undefined' ? !!process.env.NEXT_PUBLIC_LIVEKIT_URL : false;
+  const livekitRef = useRef<LivekitHandle | null>(null);
 
   useEffect(() => {
     const t = localStorage.getItem('adminToken');
@@ -119,15 +122,40 @@ export default function AdminPage() {
     }
   }, []);
 
-  const spectate = useCallback((roomId: string) => {
+  const spectate = useCallback(async (roomId: string) => {
     if (!token) return;
-    wsRef.current?.send({ type: 'admin_spectate', roomId });
-    // reset monitors
-    if (aVideoRef.current) aVideoRef.current.srcObject = null;
-    if (bVideoRef.current) bVideoRef.current.srcObject = null;
-    for (const key of Object.keys(monitorPeersRef.current)) {
-      monitorPeersRef.current[key].destroy();
-      delete monitorPeersRef.current[key];
+    if (useLivekit) {
+      // join room as admin (subscribe only)
+      livekitRef.current?.disconnect().catch(() => {});
+      livekitRef.current = null;
+      if (aVideoRef.current) aVideoRef.current.srcObject = null;
+      if (bVideoRef.current) bVideoRef.current.srcObject = null;
+      try {
+        const handle = await connectLivekit(roomId, 'admin-' + Math.random().toString(36).slice(2, 8), (remote) => {
+          // Attach streams sequentially
+          if (aVideoRef.current && !aVideoRef.current.srcObject) {
+            aVideoRef.current.srcObject = remote;
+            aVideoRef.current.muted = true;
+            aVideoRef.current.play().catch(() => {});
+          } else if (bVideoRef.current && !bVideoRef.current.srcObject) {
+            bVideoRef.current.srcObject = remote;
+            bVideoRef.current.muted = true;
+            bVideoRef.current.play().catch(() => {});
+          }
+        }, false);
+        livekitRef.current = handle;
+      } catch {
+        // ignore
+      }
+    } else {
+      wsRef.current?.send({ type: 'admin_spectate', roomId });
+      // reset monitors
+      if (aVideoRef.current) aVideoRef.current.srcObject = null;
+      if (bVideoRef.current) bVideoRef.current.srcObject = null;
+      for (const key of Object.keys(monitorPeersRef.current)) {
+        monitorPeersRef.current[key].destroy();
+        delete monitorPeersRef.current[key];
+      }
     }
     setSelectedRoomId(roomId);
   }, [token]);
