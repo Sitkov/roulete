@@ -126,8 +126,12 @@ app.get('/api/ice', async (req, res) => {
     if (config.turnUrls && config.turnUsername && config.turnCredential) {
       const urls = config.turnUrls.split(',').map((u) => u.trim()).filter(Boolean);
       for (const url of urls) {
+        // add explicit transport hints for better compatibility
+        let fixed = url;
+        if (fixed.startsWith('turns:') && !fixed.includes('transport=')) fixed += '?transport=tcp';
+        if (fixed.startsWith('turn:') && !fixed.includes('transport=')) fixed += '?transport=udp';
         iceServers.push({
-          urls: url,
+          urls: fixed,
           username: config.turnUsername,
           credential: config.turnCredential
         });
