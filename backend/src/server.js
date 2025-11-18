@@ -111,7 +111,18 @@ app.get('/api/ice', async (req, res) => {
             j?.iceServers ||
             j?.d?.iceServers ||
             (Array.isArray(j?.v) ? j.v : null);
-        // If returned plain array of urls strings, wrap into TURN objects without creds (rare)
+          // Normalize to spec: 'urls' field
+          if (Array.isArray(c)) {
+            c = c.map((entry) => {
+              if (typeof entry === 'string') return { urls: entry };
+              if (entry && entry.url && !entry.urls) {
+                const { url, ...rest } = entry;
+                return { urls: url, ...rest };
+              }
+              return entry;
+            });
+          }
+          // If returned plain array of urls strings, wrap into TURN objects without creds (rare)
           if (Array.isArray(c) && typeof c[0] === 'string') {
             c = c.map((u) => ({ urls: u }));
           }
