@@ -41,7 +41,8 @@ export function createPeer(opts: {
   const { initiator, stream, onSignal, onStream, onData, ice } = opts;
   const peer = new Peer({
     initiator,
-    trickle: true,
+    // При принудительном relay через TURN зачастую стабильнее без trickle
+    trickle: ice?.forceRelay ? false : true,
     stream,
     config: {
       iceServers: ice?.iceServers || [
