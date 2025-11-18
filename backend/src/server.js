@@ -101,7 +101,7 @@ app.get('/api/ice', async (req, res) => {
           'Content-Type': 'application/json',
           Authorization: 'Basic ' + Buffer.from(`${config.xirsysIdent}:${config.xirsysSecret}`).toString('base64')
         },
-        body: JSON.stringify({ format: 'urls' })
+        body: JSON.stringify({})
       });
       const parseCandidates = async (resp) => {
         try {
@@ -129,7 +129,7 @@ app.get('/api/ice', async (req, res) => {
         r = await fetch(urlWithCreds, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ format: 'urls' })
+          body: JSON.stringify({})
         });
         candidates = r.ok ? await parseCandidates(r) : null;
       }
