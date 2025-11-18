@@ -11,7 +11,6 @@ import { upsertUser, getUser, addComplaint, incrementAdImpression, listAds } fro
 import { Matchmaker } from './matchmaking.js';
 import { createWSServer } from './ws.js';
 import { adminRoutes } from './admin.js';
-import { AccessToken } from 'livekit-server-sdk';
 
 const app = express();
 app.disable('x-powered-by');
@@ -123,30 +122,7 @@ app.get('/api/ice', async (req, res) => {
   }
 });
 
-// LiveKit: issue access tokens for clients/admins
-app.post('/api/livekit-token', (req, res) => {
-  const { roomId, identity, name, admin } = req.body || {};
-  if (!config.livekitApiKey || !config.livekitApiSecret || !config.livekitUrl) {
-    return res.status(400).json({ error: 'LiveKit not configured' });
-  }
-  if (!roomId || !identity) return res.status(400).json({ error: 'roomId and identity required' });
-  try {
-    const at = new AccessToken(config.livekitApiKey, config.livekitApiSecret, {
-      identity: String(identity).slice(0, 128),
-      name: name ? String(name).slice(0, 128) : undefined
-    });
-    at.addGrant({
-      room: roomId,
-      roomJoin: true,
-      canPublish: !admin,
-      canSubscribe: true
-    });
-    const token = at.toJwt();
-    res.json({ token, url: config.livekitUrl });
-  } catch (e) {
-    res.status(500).json({ error: 'token_error' });
-  }
-});
+// LiveKit disabled: token endpoint removed when not using LiveKit
 
 // Admin routes
 adminRoutes(app, { matchmaker, getOnlineCount });
