@@ -15,7 +15,26 @@ import { adminRoutes } from './admin.js';
 const app = express();
 app.disable('x-powered-by');
 app.use(helmet());
-app.use(cors({ origin: config.frontendOrigin, credentials: true }));
+// CORS: allow multiple origins (local + production domains)
+const allowedOrigins = new Set([config.frontendOrigin, ...config.frontendOrigins]);
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // non-browser or same-origin
+      try {
+        const o = origin.trim();
+        // Allow exact match or *.vercel.app for convenience
+        const ok =
+          allowedOrigins.has(o) ||
+          /\.vercel\.app$/.test(new URL(o).hostname);
+        return cb(ok ? null : new Error('CORS'), ok);
+      } catch {
+        return cb(new Error('CORS'), false);
+      }
+    },
+    credentials: true
+  })
+);
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan('tiny'));

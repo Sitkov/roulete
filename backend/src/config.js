@@ -7,6 +7,10 @@ export const config = {
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
   frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+  frontendOrigins: (process.env.FRONTEND_ORIGINS || 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   databaseFile: process.env.DATABASE_FILE || './storage/app.sqlite',
   wsHeartbeatIntervalMs: 15000,
   matchmakingTimeoutMs: 30000,
