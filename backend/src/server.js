@@ -74,8 +74,9 @@ app.get('/api/ice', async (req, res) => {
   try {
     // 1) Prefer dynamic Xirsys if configured (fresh ephemeral TURN creds)
     if (config.xirsysIdent && config.xirsysSecret) {
-      const url = `https://global.xirsys.net/_turn/${encodeURIComponent(config.xirsysChannel)}`;
-      const r = await fetch(url, {
+      const apiUrl = `https://global.xirsys.net/_turn/${encodeURIComponent(config.xirsysChannel)}`;
+      // Attempt 1: Authorization header
+      let r = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -83,22 +84,38 @@ app.get('/api/ice', async (req, res) => {
         },
         body: JSON.stringify({ format: 'urls' })
       });
-      if (r.ok) {
-        const j = await r.json();
-        // Xirsys returns a few shapes:
-        // { v: { iceServers: [...] } } OR { iceServers: [...] } OR { v: [...] } when format:"urls"
-        let candidates =
-          j?.v?.iceServers ||
-          j?.iceServers ||
-          j?.d?.iceServers ||
-          (Array.isArray(j?.v) ? j.v : null);
+      const parseCandidates = async (resp) => {
+        try {
+          const j = await resp.json();
+          let c =
+            j?.v?.iceServers ||
+            j?.iceServers ||
+            j?.d?.iceServers ||
+            (Array.isArray(j?.v) ? j.v : null);
         // If returned plain array of urls strings, wrap into TURN objects without creds (rare)
-        if (Array.isArray(candidates) && typeof candidates[0] === 'string') {
-          candidates = candidates.map((u) => ({ urls: u }));
+          if (Array.isArray(c) && typeof c[0] === 'string') {
+            c = c.map((u) => ({ urls: u }));
+          }
+          return Array.isArray(c) && c.length ? c : null;
+        } catch {
+          return null;
         }
-        if (Array.isArray(candidates) && candidates.length) {
+      };
+      let candidates = r.ok ? await parseCandidates(r) : null;
+      // Attempt 2: embed credentials in URL (per Xirsys curl example)
+      if (!candidates) {
+        const urlWithCreds = `https://${encodeURIComponent(config.xirsysIdent)}:${encodeURIComponent(
+          config.xirsysSecret
+        )}@global.xirsys.net/_turn/${encodeURIComponent(config.xirsysChannel)}`;
+        r = await fetch(urlWithCreds, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ format: 'urls' })
+        });
+        candidates = r.ok ? await parseCandidates(r) : null;
+      }
+      if (candidates) {
           return res.json({ iceServers: candidates, forceRelay: !!config.iceForceRelay });
-        }
       }
     }
     // 2) Fallback to static env-configured TURN
