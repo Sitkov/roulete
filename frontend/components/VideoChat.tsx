@@ -165,10 +165,22 @@ export function VideoChat() {
         localVideoRef.current.muted = true;
         await localVideoRef.current.play().catch(() => {});
       }
+      // Ensure ICE config is loaded before creating peer
+      let ice = iceCfg;
+      if (!ice) {
+        try {
+          const cfg = await loadIceConfig();
+          setIceCfg(cfg);
+          ice = cfg;
+        } catch {
+          // fallback to defaults inside createPeer
+          ice = undefined as any;
+        }
+      }
       const peer = createPeer({
         initiator,
         stream,
-        ice: iceCfg || undefined,
+        ice: ice || undefined,
         onSignal: (data) => {
           wsRef.current?.send({
             type: 'signal',
