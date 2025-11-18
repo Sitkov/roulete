@@ -145,6 +145,35 @@ app.get('/api/ice', async (req, res) => {
         candidates = r.ok ? await parseCandidates(r) : null;
       }
       if (candidates) {
+          // Prefer strongest compatibility: only TLS over 443 (turns, tcp)
+          const strong = candidates
+            .map((e) => {
+              if (!e?.urls) return null;
+              let u = Array.isArray(e.urls) ? e.urls[0] : e.urls;
+              if (typeof u !== 'string') return null;
+              // normalize to turns:...:443?transport=tcp
+              if (u.startsWith('turn:')) {
+                // upgrade to turns
+                u = u.replace(/^turn:/, 'turns:');
+              }
+              if (!/:\d+/.test(u)) {
+                // add 443 if port missing
+                u = u.replace(/^turns:([^?]+)(.*)$/, 'turns:$1:443$2');
+              } else {
+                // force port 443
+                u = u.replace(/^turns:([^:]+):\d+/, 'turns:$1:443');
+              }
+              if (!u.includes('transport=')) {
+                u += (u.includes('?') ? '&' : '?') + 'transport=tcp';
+              } else {
+                u = u.replace(/transport=\w+/i, 'transport=tcp');
+              }
+              return { urls: u, username: e.username, credential: e.credential };
+            })
+            .filter(Boolean);
+          if (strong.length) {
+            return res.json({ iceServers: strong, forceRelay: true });
+          }
           return res.json({ iceServers: candidates, forceRelay: !!config.iceForceRelay });
       }
     }
