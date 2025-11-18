@@ -44,6 +44,7 @@ export function createPeer(opts: {
     // При принудительном relay через TURN зачастую стабильнее без trickle
     trickle: ice?.forceRelay ? false : true,
     stream,
+    offerOptions: { offerToReceiveAudio: true, offerToReceiveVideo: true },
     config: {
       iceServers: ice?.iceServers || [
         { urls: 'stun:stun.l.google.com:19302' },
